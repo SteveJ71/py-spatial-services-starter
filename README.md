@@ -48,8 +48,3 @@ python examples/01_lot_from_address.py
 python examples/02_nearby_lots.py
 python examples/03_lot_geometry_mga94_vs_mga2020.py
 ```
-
-## License
-
-MIT License
-© 2026 Stephen Mitchell
