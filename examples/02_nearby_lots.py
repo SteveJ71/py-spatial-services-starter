@@ -1,22 +1,18 @@
 """
-Example 02 — Find nearby lots from an address
+Example 02 — Nearby lots from an address (personal reference)
 
-What this script does:
-1) Converts a street address to an approximate coordinate (lon/lat).
-2) Searches the NSW cadastre for lots near that point.
-3) Prints nearby Lot / DP references.
+- Address → lon/lat (EPSG:4326)
+- Search parcels within a distance of that point (GIS proximity)
 
-Notes for surveyors:
-- Address positions are approximate.
-- Distance search is GIS-based, not survey-accurate adjacency.
-- Useful for quick context checks around a property.
+Notes:
+- Address match can be fuzzy. Check warnings + matched address.
+- Cadastre queries sometimes throw transient ArcGIS 500 errors. This script prints a
+  friendly message instead of a traceback.
 """
 
 import sys
 from pathlib import Path
 
-# Allow example scripts to import from the project root.
-# This avoids Python packaging setup and keeps the examples easy to run.
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
@@ -24,17 +20,25 @@ from nswspatial.address import address_to_point
 from nswspatial.cadastre import nearby_lots
 
 
+def _prompt_float(prompt: str, default: float) -> float:
+    raw = input(prompt).strip()
+    if not raw:
+        return default
+    try:
+        return float(raw)
+    except ValueError:
+        print(f"Invalid number — using default {default:g}.")
+        return default
+
+
 def main():
-    # --- Input ---
-    number = "22"
-    street = "EASTBOURNE AVE"
-    suburb = "CLOVELLY"
-    postcode = None
-    search_distance_m = 30  # metres
+    address = input("Enter street address (e.g. 39 RYAN ST): ").strip()
+    suburb = input("Enter suburb: ").strip()
+    postcode = input("Enter postcode (optional): ").strip() or None
 
-    address = f"{number} {street}"
+    # Used only for a warning if the address service "fixes" the house number
+    number = address.split()[0] if address else ""
 
-   # 1) Address -> coordinate (lon/lat)
     try:
         lon, lat, matched_address, match_count, matched_house = address_to_point(
             address,
@@ -43,36 +47,37 @@ def main():
         )
     except RuntimeError as ex:
         print("\nNo address found.")
-        print("Tip: check spelling and try adding suburb + postcode, or abbreviations (ST vs STREET).")
         print(f"Details: {ex}")
         return
 
-    print(f"\nInput address:   {address}, {suburb}")
-    print(f"Matched address: {matched_address}")
+    print(f"\nInput:   {address}, {suburb}")
+    print(f"Matched: {matched_address}")
 
     if match_count > 1:
         print(f"WARNING: {match_count} possible address matches returned — fuzzy match used.")
 
-    # Address services may ignore invalid house numbers and snap to a nearby address
-    if matched_house:
-        if matched_house.strip() != number.strip():
-            print(
-                f"WARNING: Input house number '{number}' "
-                f"does not match returned '{matched_house}'."
-            )
-    else:
-        print("WARNING: No house number returned by address service.")
+    if matched_house and matched_house.strip().upper() != number.strip().upper():
+        print(f"WARNING: Input house number '{number}' != matched '{matched_house}' (fuzzy match).")
 
-    # 2) Search nearby parcels
-    lots = nearby_lots(lon, lat, search_distance_m)
+    print(f"\nAddress point (lon/lat): {lon}, {lat}")
 
-    if not lots:
-        print(f"\nNo lots found within {search_distance_m} m.")
+    search_distance_m = _prompt_float("\nEnter search distance in metres (default 50): ", 50.0)
+
+    try:
+        lots = nearby_lots(lon, lat, search_distance_m)
+    except RuntimeError as ex:
+        print(f"\n[ERROR] Cadastre query failed: {ex}")
+        print("        This is often a transient NSW ArcGIS service error.")
+        print("        Try running again, or try later.")
         return
 
-    print(f"\nLots within {search_distance_m} m:")
+    if not lots:
+        print(f"\nNo lots found within {search_distance_m:g} m.")
+        return
+
+    print(f"\nLots within {search_distance_m:g} m:")
     for lot, plan in lots:
-        print(f"Lot {lot} {plan}")
+        print(f"  Lot {lot} {plan}")
 
 
 if __name__ == "__main__":
