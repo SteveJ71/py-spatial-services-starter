@@ -3,7 +3,10 @@
 Simple Python examples showing how to access NSW Spatial Services  
 (SIX Maps / Cadastre) using ArcGIS REST APIs.
 
-These scripts are for learning and experimentation.
+These scripts are for learning and experimentation with the APIs.
+
+Service reliability can vary. Queries may occasionally be slow,
+fail, or return empty results. Re-running often succeeds.
 
 ---
 
@@ -14,7 +17,7 @@ These scripts are for learning and experimentation.
 
 - Convert an address to longitude / latitude  
 - Identify Lot / DP (and Section where present)  
-- Shows handling of fuzzy matches and multiple lots
+- Demonstrates fuzzy matches and multiple-lot results
 
 ---
 
@@ -22,7 +25,7 @@ These scripts are for learning and experimentation.
 `examples/02_nearby_lots.py`
 
 - Convert an address to a coordinate  
-- Find nearby parcels within a distance  
+- Find nearby parcels within a distance
 
 ---
 
@@ -31,7 +34,7 @@ These scripts are for learning and experimentation.
 
 - Fetch lot boundary geometry  
 - Compare MGA94 and MGA2020 outputs  
-- Demonstrates that the service may return identical coordinates when different EPSG codes are requested.
+- Shows that requesting different EPSG codes can return identical coordinates
 
 ---
 
@@ -40,7 +43,6 @@ These scripts are for learning and experimentation.
 ```bash
 pip install -r requirements.txt
 ```
-
 
 ## Run
 ```bash
